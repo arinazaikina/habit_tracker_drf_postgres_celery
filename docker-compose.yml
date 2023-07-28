@@ -1,0 +1,80 @@
+version: '3.10'
+
+networks:
+  habit:
+    driver: bridge
+
+
+services:
+  db:
+    container_name: db
+    env_file:
+      - ./.env
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - habit
+
+
+  web:
+    container_name: web
+    env_file:
+      - ./.env
+    build: .
+    command: [ "bash", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000" ]
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - habit
+    depends_on:
+      - db
+
+  celery:
+    container_name: celery
+    build: .
+    command: celery -A config.celery worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - web
+    networks:
+      - habit
+
+  celery-beat:
+    container_name: celery-beat
+    build: .
+    command: celery -A config.celery beat --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - web
+    networks:
+      - habit
+
+  redis:
+    container_name: redis
+    image: "redis:alpine"
+    networks:
+      - habit
+
+  bot:
+    container_name: bot
+    build: .
+    command: python telegram_bot/main.py
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    networks:
+      - habit
+
+volumes:
+  postgres_data:
