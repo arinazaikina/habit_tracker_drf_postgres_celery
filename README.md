@@ -43,7 +43,7 @@ TG_BOT_TOKEN=
 8. Запустить проект с помощью Docker, используя следующую команду:
 
 ```bash
-docker-compose up -d
+docker-compose build --no-cache && docker-compose up -d
 ```
 
 9. Создать суперпользователя:
