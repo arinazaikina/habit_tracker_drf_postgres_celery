@@ -24,7 +24,7 @@ services:
     env_file:
       - ./.env
     build: .
-    command: [ "bash", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000" ]
+    command: bash -c "/usr/wait-for-it.sh db:5432 -- python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - .:/app
     ports:
@@ -49,7 +49,7 @@ services:
   celery-beat:
     container_name: celery-beat
     build: .
-    command: celery -A config.celery beat --loglevel=info
+    command: bash -c "/usr/wait-for-it.sh db:5432 -- python manage.py migrate && celery -A config.celery beat --loglevel=info"
     volumes:
       - .:/app
     depends_on:
