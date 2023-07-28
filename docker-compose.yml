@@ -53,8 +53,8 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - db
       - web
+      - celery
     networks:
       - habit
 
