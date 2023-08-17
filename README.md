@@ -29,62 +29,37 @@ POSTGRES_USER=
 POSTGRES_DB=habit_db
 POSTGRES_PORT=5432
 POSTGRES_PASSWORD=
-POSTGRES_HOST=db
+POSTGRES_HOST=db_habit
+POSTGRES_HOST_AUTH_METHOD=trust
 
 EMAIL_HOST_USER=
 EMAIL_HOST_PASSWORD=
 
 TG_BOT_TOKEN=
+
+CELERY_BROKER_URL='redis://redis_habit:6379/0'
+CELERY_RESULT_BACKEND='redis://redis_habit:6379/0'
 ```
-Не менять значение `DJANGO_SERVER_URL=http://web:8000` и `POSTGRES_HOST=db`
+Не менять значения `DJANGO_SERVER_URL=http://web:8000`, `POSTGRES_HOST=db_habit`, 
+`CELERY_BROKER_URL='redis://redis_habit:6379/0'`, `CELERY_RESULT_BACKEND='redis://redis_habit:6379/0'`
 
 В каталоге проекта есть шаблон `.env.template`
 
 8. Запустить проект с помощью Docker, используя следующую команду:
 
 ```bash
-docker-compose up -d
+docker-compose build --no-cache && docker-compose up
 ```
 
-9. Создать суперпользователя:
-
-* Войти в Docker контейнер `web`:
+или
 
 ```bash
-docker exec -it web /bin/bash
+docker-compose  up -d
 ```
-
-* Создать суперпользователя внутри Docker контейнера:
-
-```bash
-python manage.py createsuperuser
-```
-
-## Запуск тестов и просмотр отчета
-
-1. Войти в Docker контейнер `web`:
-
-```bash
-docker exec -it web /bin/bash
-```
-
-2. Запустить тесты
-
-```bash
-coverage run --source='.' manage.py test
-```
-
-3. Посмотреть покрытие
-
-```bash
-coverage html && lynx htmlcov/index.html
-```
-
-Чтобы выйти, нажать `q`, затем `y`.
 
 ## Доступ к Swagger UI
 
-Взаимодействие с API по следующему URL: http://0.0.0.0:8000/swagger/
+Взаимодействие с API по следующему URL: http://0.0.0.0:80/swagger/
 
 ## Описание проекта
 

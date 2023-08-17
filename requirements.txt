@@ -13,5 +13,4 @@ django-celery-beat==2.5.0
 aiogram==2.25.1
 django-cors-headers==4.2.0
 gunicorn
-whitenoise
 flake8==6.0.0

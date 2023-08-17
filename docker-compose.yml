@@ -6,8 +6,8 @@ networks:
 
 
 services:
-  db:
-    container_name: db
+  db_habit:
+    container_name: db_habit
     env_file:
       - ./.env
     image: postgres:15
@@ -15,6 +15,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./postgresql.conf:/etc/postgresql/postgresql.conf
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - habit
 
@@ -24,57 +29,84 @@ services:
     env_file:
       - ./.env
     build: .
-    command: bash -c "/usr/wait-for-it.sh db:5432 -- python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - .:/app
+      - static_volume:/app/static
     ports:
       - "8000:8000"
     networks:
       - habit
     depends_on:
-      - db
+      db_habit:
+        condition: service_healthy
+      redis_habit:
+        condition: service_started
+    command: >
+      bash -c "python  manage.py collectstatic --noinput
+      && chmod -R 755 /app/static
+      && python manage.py makemigrations
+      && python manage.py migrate
+      && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
 
-  celery:
-    container_name: celery
+  celery_habit:
+    container_name: celery_habit
     build: .
     command: celery -A config.celery worker --loglevel=info
     volumes:
       - .:/app
+    links:
+      - redis_habit
     depends_on:
-      - db
+      - db_habit
       - web
     networks:
       - habit
 
-  celery-beat:
-    container_name: celery-beat
+  celery-beat_habit:
+    container_name: celery-beat_habit
     build: .
-    command: bash -c "/usr/wait-for-it.sh db:5432 -- sleep 30 && celery -A config.celery beat --loglevel=info"
+    command: bash -c "sleep 30 && celery -A config.celery beat --loglevel=info"
     volumes:
       - .:/app
     depends_on:
       - web
-      - celery
+      - celery_habit
     networks:
       - habit
 
-  redis:
-    container_name: redis
+  redis_habit:
+    container_name: redis_habit
+    command: redis-server --save 20 1 --loglevel warning
     image: "redis:alpine"
     networks:
       - habit
 
-  bot:
-    container_name: bot
+  bot_hanbit:
+    container_name: bot_habit
     build: .
     command: python telegram_bot/main.py
     volumes:
       - .:/app
     depends_on:
-      - db
-      - redis
+      - db_habit
+      - redis_habit
     networks:
       - habit
 
+  nginx_habit:
+    image: nginx:latest
+    container_name: nginx_habit
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - static_volume:/app/static
+    depends_on:
+      - web
+    networks:
+      - habit
+    user: root
+
 volumes:
   postgres_data:
+  static_volume:
